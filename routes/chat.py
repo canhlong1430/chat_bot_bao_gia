@@ -43,7 +43,7 @@ def chat():
 
         if price is None:
             print(f"⚠️ SP '{sp_name}' không có giá ➜ Đặt giá = None hoặc 0 theo yêu cầu")
-            # price = 0  # Nếu muốn mặc định giá là 0 thì bỏ comment dòng này
+            price = 0  # Nếu muốn mặc định giá là 0 thì bỏ comment dòng này
         # Gia ban le
         price1 = (
                 sp_data.get('Giá bán lẻ')
@@ -52,7 +52,7 @@ def chat():
         )
         if price1 is None:
             print(f"⚠️ SP '{sp_name}' không có giá ➜ Đặt giá = None hoặc 0 theo yêu cầu")
-            # price = 0  # Nếu muốn mặc định giá là 0 thì bỏ comment dòng này
+            price = 0  # Nếu muốn mặc định giá là 0 thì bỏ comment dòng này
 
         items.append({
             'name': sp_name,
