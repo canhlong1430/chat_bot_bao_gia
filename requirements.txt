@@ -1,4 +1,5 @@
 Flask
 openpyxl
 pandas
-xlwings
+gunicorn
+Pillow

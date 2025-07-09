@@ -33,21 +33,33 @@ def chat():
 
         unit = sp_data.get('Đvt')
 
+        # Ưu tiên lấy lần lượt: 'Giá bán' → 'Giá bán C1' → 'Giá bán cấp 1'
         price = (
-                sp_data.get('Giá bán')
-                or sp_data.get('Giá bán C1 Chưa VAT')
-                or sp_data.get('Giá bán C1 Có VAT')
+            sp_data.get('Giá bán')
+            or sp_data.get('Giá bán C1')
+            or sp_data.get('Giá bán cấp 1')
+            or None
         )
 
-        if not price:
-            print(f"⚠️ SP '{sp_name}' không có giá ➜ Đặt giá = 0")
-            price = 0
+        if price is None:
+            print(f"⚠️ SP '{sp_name}' không có giá ➜ Đặt giá = None hoặc 0 theo yêu cầu")
+            # price = 0  # Nếu muốn mặc định giá là 0 thì bỏ comment dòng này
+        # Gia ban le
+        price1 = (
+                sp_data.get('Giá bán lẻ')
+
+                or None
+        )
+        if price1 is None:
+            print(f"⚠️ SP '{sp_name}' không có giá ➜ Đặt giá = None hoặc 0 theo yêu cầu")
+            # price = 0  # Nếu muốn mặc định giá là 0 thì bỏ comment dòng này
 
         items.append({
             'name': sp_name,
             'quantity': sl,
             'unit': unit,
             'unit_price': price,
+            'unit_price1':price1,
             'extra_data': sp_data
         })
 
