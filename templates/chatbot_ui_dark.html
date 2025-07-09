@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chatbot Báo Giá - Dark Theme</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: #111;
+      display: flex;
+      justify-content: center;
+    }
+
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      width: 420px;
+      height: 90vh;
+      background: #1a1a1a;
+      border-radius: 12px;
+      margin-top: 20px;
+      box-shadow: 0 10px 30px rgba(0, 123, 255, 0.3);
+      overflow: hidden;
+    }
+
+    .chat-header {
+      background-color: #003366;
+      color: #fff;
+      padding: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat-header img {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+    }
+
+    .chat-header .title {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
+    .chat-box {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #121212;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      border-radius: 16px;
+      max-width: 75%;
+      word-wrap: break-word;
+    }
+
+    .user {
+      align-self: flex-end;
+      background: #0066cc;
+      color: #fff;
+      border-bottom-right-radius: 0;
+    }
+
+    .bot {
+      align-self: flex-start;
+      background: #2a2a2a;
+      color: #eee;
+      border-bottom-left-radius: 0;
+    }
+
+    .chat-input {
+      display: flex;
+      border-top: 1px solid #333;
+      padding: 10px;
+      background: #1a1a1a;
+    }
+
+    .chat-input input {
+      flex: 1;
+      border: 1px solid #444;
+      padding: 10px;
+      border-radius: 20px;
+      font-size: 15px;
+      background: #000;
+      color: #fff;
+    }
+
+    .chat-input button {
+      margin-left: 10px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    .upload-area {
+      padding: 10px;
+      border-top: 1px solid #333;
+      background: #1c1c1c;
+      text-align: center;
+    }
+
+    .upload-area input,
+    .upload-area select,
+    .upload-area button {
+      margin: 5px;
+      padding: 8px;
+      font-size: 14px;
+      background: #222;
+      color: #eee;
+      border: 1px solid #444;
+      border-radius: 5px;
+    }
+
+    .upload-area button {
+      background: #0066cc;
+      color: white;
+      border: none;
+    }
+
+    @media (max-width: 600px) {
+      .chat-container {
+        width: 100%;
+        height: 100vh;
+        border-radius: 0;
+      }
+
+      .chat-input {
+        flex-direction: column;
+      }
+
+      .chat-input button {
+        width: 100%;
+        margin: 8px 0 0 0;
+      }
+
+      .upload-area {
+        flex-direction: column;
+      }
+
+      .upload-area input,
+      .upload-area select,
+      .upload-area button {
+        width: 100%;
+        margin: 6px 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="bot" />
+      <div class="title">Báo Giá Bot</div>
+    </div>
+    <div id="chat-box" class="chat-box"></div>
+    <div class="chat-input">
+      <input type="text" id="user-input" placeholder="Nhập lệnh /baogia...">
+      <button onclick="sendMessage()">Gửi</button>
+    </div>
+    <form class="upload-area" id="upload-form">
+      <input type="file" id="file-input" name="file">
+      <select id="upload-type">
+        <option value="products">Sản phẩm</option>
+        <option value="template">Template</option>
+      </select>
+      <button type="submit">Tải lên</button>
+    </form>
+  </div>
+
+  <script>
+    const chatBox = document.getElementById("chat-box");
+
+    function addBubble(text, sender) {
+      const div = document.createElement("div");
+      div.className = "bubble " + sender;
+      div.innerHTML = text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+      const input = document.getElementById("user-input");
+      const text = input.value.trim();
+      if (!text) return;
+      addBubble("🧑 " + text, "user");
+      input.value = "";
+
+      fetch("/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: text })
+      })
+        .then(res => res.json())
+        .then(data => {
+          const reply = data.output_file
+            ? `<a href="${window.location.origin}/${data.output_file}" target="_blank" style="color:#00ccff;text-decoration:none;">📄 Tải báo giá</a>`
+            : data.message || "Không có phản hồi.";
+          addBubble("🤖 " + reply, "bot");
+        })
+        .catch(() => addBubble("🤖 Lỗi gửi yêu cầu", "bot"));
+    }
+
+    document.getElementById("upload-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const file = document.getElementById("file-input").files[0];
+      const type = document.getElementById("upload-type").value;
+      if (!file) {
+        alert("Vui lòng chọn file.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      fetch(`/upload/${type}`, {
+        method: "POST",
+        body: formData
+      })
+        .then(res => res.json())
+        .then(data => addBubble("🤖 " + (data.message || "Tải lên thành công"), "bot"))
+        .catch(() => addBubble("🤖 Lỗi khi tải file", "bot"));
+    });
+
+    document.getElementById("user-input").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+  </script>
+</body>
+
+</html>
