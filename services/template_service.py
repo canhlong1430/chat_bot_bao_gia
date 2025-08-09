@@ -109,12 +109,9 @@ class TemplateService:
         return result
 
     def apply_range_format(self, ws, range_str, format_list, row_offset=0, col_offset=0):
-        """
-        Áp dụng list format & value vào vùng range_str, có thể dịch chuyển theo offset.
-        Chỉ gán value cho cell có value khác None (theo đúng thứ tự list format).
-        Thứ tự format_list phải đúng thứ tự duyệt từng cell trong rows_from_range(range_str)!
-        """
         idx = 0
+        row_set = set()  # lưu các dòng duy nhất
+
         for row in rows_from_range(range_str):
             for coord in row:
                 fmt = format_list[idx]
@@ -122,17 +119,46 @@ class TemplateService:
                 tgt_row = cell.row + row_offset
                 tgt_col = cell.column + col_offset
                 tgt = ws.cell(row=tgt_row, column=tgt_col)
-                # Chỉ gán value nếu value khác None (bám sát logic copy gốc)
+
+                # ✅ Xử lý chiều cao hàng
+                cell_value = fmt['value'] if fmt['value'] is not None else ""
+                if "\n" in str(cell_value) or fmt['align'].wrapText:
+                    ws.row_dimensions[tgt_row].height = None
+                else:
+                    src_height = ws.row_dimensions[cell.row].height
+                    if src_height is not None:
+                        ws.row_dimensions[tgt_row].height = src_height
+
+                # Gán dữ liệu nếu có
                 if fmt['value'] is not None:
                     self.safe_set(ws, tgt.coordinate, fmt['value'])
+
+                # Copy style
                 tgt._style = copy(fmt['style'])
                 tgt.number_format = fmt['num_fmt']
                 tgt.font = copy(fmt['font'])
                 tgt.border = copy(fmt['border'])
                 tgt.fill = copy(fmt['fill'])
-                tgt.alignment = copy(fmt['align'])
+
+                # ✅ Copy alignment: tắt shrinkToFit, bật wrapText
+                new_alignment = copy(fmt['align'])
+                if new_alignment.shrinkToFit:
+                    new_alignment.shrinkToFit = False
+                new_alignment.wrapText = True
+                tgt.alignment = new_alignment
+
                 tgt.protection = copy(fmt['prot'])
+
+                row_set.add(tgt_row)  # lưu dòng duy nhất
                 idx += 1
+
+        # ✅ Ép height = 30 cho dòng cuối và dòng kế cuối
+        if row_set:
+            sorted_rows = sorted(row_set)
+            last_row = sorted_rows[-1]
+            ws.row_dimensions[last_row].height = 50
+            if len(sorted_rows) >= 2:
+                ws.row_dimensions[sorted_rows[-2]].height = 40
 
     def extract_merge_list(self, ws, r_range):
         """
@@ -203,7 +229,7 @@ class TemplateService:
         start, end = 15, 30
         n = max(len(items) - 1, 0)
         last_col = get_column_letter(ws.max_column)
-        row_range = f"A16:H24"
+        row_range = f"A16:H23"
         row_range_to_delete = f"A16:H200"
         # Bước 1: copy + move
         if n > 0:
@@ -228,7 +254,6 @@ class TemplateService:
             self.safe_set(ws, f'F{row}', item['unit_price1'] * item['quantity'])
             self.safe_set(ws, f'G{row}', item['unit_price'])
             self.safe_set(ws, f'H{row}', item['unit_price'] * item['quantity'])
-
             extra = item.get('extra_data', {})
             row += 1
 
