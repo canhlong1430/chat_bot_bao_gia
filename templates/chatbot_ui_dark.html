@@ -106,10 +106,6 @@
       transition: background 0.3s;
     }
 
-    /* [data-theme="light"] .logo {
-      background: var(--bg-primary);
-    } */
-
     .title {
       font-size: 18px;
       font-weight: 600;
@@ -154,7 +150,6 @@
       margin: 0 auto;
       width: 100%;
       padding-bottom: 200px;
-      /* tăng padding để không bị che bởi input */
     }
 
     .chat-box::-webkit-scrollbar {
@@ -460,13 +455,13 @@
     @media (max-width: 480px) {
       .chat-box {
         padding: 8px 2vw 0 2vw;
-        padding-bottom: 180px; /* tăng thêm để không bị che bởi input trên mobile */
+        padding-bottom: 180px;
         max-width: 100vw;
-        margin-bottom: 8px; /* luôn chừa khoảng cách với input */
+        margin-bottom: 8px;
       }
 
       .input-container {
-        padding: 8px 2vw 20px 2vw; /* tăng padding-bottom để tạo khoảng cách */
+        padding: 8px 2vw 20px 2vw;
         width: 100vw;
         left: 0;
         box-sizing: border-box;
@@ -640,11 +635,9 @@
         lightIcon.style.display = 'none';
       }
 
-      // Save theme preference
       localStorage.setItem('theme', currentTheme);
     }
 
-    // Load saved theme
     function loadTheme() {
       const savedTheme = localStorage.getItem('theme') || 'dark';
       currentTheme = savedTheme;
@@ -677,7 +670,6 @@
       const bubbleDiv = document.createElement('div');
       bubbleDiv.className = 'message-bubble';
       if (type === 'user') {
-        // Escape HTML và chuyển \n thành <br> để giữ định dạng xuống dòng
         bubbleDiv.innerHTML = '<span style="font-weight:500;">🧑</span> ' + escapeHTML(content).replace(/\n/g, '<br>');
       } else {
         bubbleDiv.innerHTML = content;
@@ -717,7 +709,6 @@
     }
 
     function validateSyntax(message) {
-      // Mỗi dòng là <sản phẩm>:<số lượng>
       const lines = message.trim().split(/\r?\n/).filter(Boolean);
       if (lines.length === 0) return false;
       for (const line of lines) {
@@ -727,22 +718,18 @@
     }
 
     async function sendMessage() {
-
       const message = messageInput.value.trim();
       if (!message || isLoading) return;
 
-      // Always show user message
       addMessage(message, 'user');
       messageInput.value = '';
       adjustTextareaHeight();
 
-      // Validate syntax
       if (!validateSyntax(message)) {
         addMessage('❌ Cú pháp không đúng. Vui lòng nhập mỗi dòng theo định dạng: <code>Tên sản phẩm:Số lượng</code><br>Ví dụ:<br><code>Đèn LED:2\nQuạt:5</code>', 'bot');
         return;
       }
 
-      // Show loading
       isLoading = true;
       sendButton.disabled = true;
       addLoadingMessage();
@@ -750,9 +737,7 @@
       try {
         const response = await fetch('/chat', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ message })
         });
 
@@ -764,14 +749,12 @@
         } else {
           let reply = '';
 
-          // Add download link if file exists
           if (data.output_file) {
             reply += `<a href="${window.location.origin}/${data.output_file}" target="_blank">
               📄 Tải báo giá xuống
             </a>`;
           }
 
-          // Add details button if logs exist
           if (data.logs && data.logs.length > 0) {
             const detailId = `detail-${Date.now()}`;
             reply += `
@@ -785,7 +768,6 @@
             `;
           }
 
-          // Add message if exists
           if (data.message) {
             reply += `<br><br>${data.message}`;
           }
@@ -812,13 +794,11 @@
       }
     }
 
-    // Auto-resize textarea
     function adjustTextareaHeight() {
       messageInput.style.height = 'auto';
       messageInput.style.height = Math.min(messageInput.scrollHeight, window.innerHeight * 0.3) + 'px';
     }
 
-    // Upload functionality
     function toggleUpload() {
       const panel = document.getElementById('uploadPanel');
       panel.classList.toggle('show');
@@ -829,26 +809,40 @@
       panel.classList.remove('show');
     }
 
-    // Event listeners và khởi tạo sau khi DOM đã sẵn sàng
+    // Detect desktop
+    function isDesktop() {
+      const ua = navigator.userAgent || '';
+      const likelyMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
+      const hasFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+      return hasFinePointer && !likelyMobile;
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
       messageInput.addEventListener('input', adjustTextareaHeight);
-      // Luôn giữ ô nhập liệu phía trên bàn phím mỗi lần focus, blur, resize (khi bàn phím mở/đóng)
+
       function scrollInputToView() {
         setTimeout(function() {
           const inputContainer = document.querySelector('.input-container');
           if (inputContainer) {
             inputContainer.scrollIntoView({behavior: 'auto', block: 'center'});
           }
-          const chatBox = document.getElementById('chatBox');
           if (chatBox) {
             chatBox.scrollTop = chatBox.scrollHeight;
           }
-        }, 50); // rất nhanh để luôn giữ đúng vị trí
+        }, 50);
       }
       messageInput.addEventListener('focus', scrollInputToView);
       messageInput.addEventListener('blur', scrollInputToView);
       window.addEventListener('resize', scrollInputToView);
-      // Đã bỏ event keydown gửi tin nhắn khi nhấn Enter, giờ Enter chỉ xuống dòng
+
+      // Gửi bằng Enter trên PC, Shift+Enter xuống dòng
+      messageInput.addEventListener('keydown', function (e) {
+        if (e.isComposing || e.key !== 'Enter') return;
+        if (isDesktop() && !e.altKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
 
       const uploadForm = document.getElementById('uploadForm');
       if (uploadForm) {
@@ -869,7 +863,6 @@
             });
             const data = await response.json();
             addMessage(`✅ ${data.message || 'Tải file thành công!'}`, 'bot');
-            // Reset form and hide panel
             fileInput.value = '';
             document.getElementById('uploadPanel').classList.remove('show');
           } catch (error) {
@@ -877,10 +870,9 @@
           }
         });
       }
-      // Initialize theme
+
       loadTheme();
     });
   </script>
 </body>
-
 </html>
