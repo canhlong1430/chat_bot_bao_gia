@@ -237,14 +237,10 @@
     }
 
     @keyframes loading-bounce {
-
-      0%,
-      80%,
-      100% {
+      0%, 80%, 100% {
         transform: scale(0.8);
         opacity: 0.5;
       }
-
       40% {
         transform: scale(1);
         opacity: 1;
@@ -352,7 +348,6 @@
         opacity: 0;
         transform: translateY(20px);
       }
-
       to {
         opacity: 1;
         transform: translateY(0);
@@ -566,13 +561,12 @@
       <div class="message bot">
         <div class="message-bubble">
           👋 Xin chào! Tôi là Bot báo giá Rạng Đông. Vui lòng nhập yêu cầu báo giá theo cú pháp:<br>
-         <i> Sản phẩm : số lượng (xuống dòng với nhiều sản phẩm, nhấn ALT + enter để xuống dòng)<br>
-
+          <i> Sản phẩm : số lượng (xuống dòng với nhiều sản phẩm, nhấn ALT + Enter để xuống dòng trên máy tính)<br>
             Ví dụ: <br> Đèn LED Downlight AT04 90/5W 6500K SS : 5 <br>
                     LED Downlight đổi màu AT20 90/10W : 10 <br>
                     LED Panel P06 320x1280/50W : 10 <br>
                     LED ốp trần LN05 220/14W : 30
-         <br></i><br>
+          <br></i><br>
           Cập nhật dữ liệu sản phẩm bằng nút <i class="fas fa-upload"></i> bên dưới.
         </div>
       </div>
@@ -726,7 +720,7 @@
       adjustTextareaHeight();
 
       if (!validateSyntax(message)) {
-        addMessage('❌ Cú pháp không đúng. Vui lòng nhập mỗi dòng theo định dạng: <code>Tên sản phẩm:Số lượng</code><br>Ví dụ:<br><code>Đèn LED:2\nQuạt:5</code>', 'bot');
+        addMessage('❌ Cú pháp không đúng. Vui lòng nhập mỗi dòng theo định dạng: <code>Tên sản phẩm:Số lượng</code><br>Ví dụ:<br><code>Đèn LED:2\nQuạt:5</code><br><i>Gợi ý: Trên máy tính nhấn <b>Alt + Enter</b> để xuống dòng.</i>', 'bot');
         return;
       }
 
@@ -809,7 +803,7 @@
       panel.classList.remove('show');
     }
 
-    // Detect desktop
+    // Detect desktop as precisely as we can without external libs
     function isDesktop() {
       const ua = navigator.userAgent || '';
       const likelyMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(ua);
@@ -835,12 +829,37 @@
       messageInput.addEventListener('blur', scrollInputToView);
       window.addEventListener('resize', scrollInputToView);
 
-      // Gửi bằng Enter trên PC, Shift+Enter xuống dòng
+      /**
+       * PHÍM TẮT NHẬP/TIN NHẮN
+       * - Trên máy tính (desktop):
+       *    Enter             -> Gửi tin
+       *    Alt + Enter       -> Xuống dòng
+       *    Shift + Enter     -> Xuống dòng
+       *    Ctrl/Cmd + Enter  -> Gửi tin
+       * - Trên thiết bị di động/máy tính bảng: giữ nguyên hành vi mặc định (Enter xuống dòng).
+       */
       messageInput.addEventListener('keydown', function (e) {
         if (e.isComposing || e.key !== 'Enter') return;
-        if (isDesktop() && !e.altKey) {
+
+        if (isDesktop()) {
+          // Nếu có Alt hoặc Shift -> xuống dòng (để textarea xử lý mặc định)
+          if (e.altKey || e.shiftKey) {
+            return; // không chặn, cho phép xuống dòng
+          }
+
+          // Nếu Ctrl/Cmd -> gửi
+          if (e.ctrlKey || e.metaKey) {
+            e.preventDefault();
+            sendMessage();
+            return;
+          }
+
+          // Không có modifier -> gửi
           e.preventDefault();
           sendMessage();
+        } else {
+          // Mobile/tablet: giữ mặc định (xuống dòng)
+          return;
         }
       });
 
